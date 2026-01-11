@@ -243,8 +243,32 @@ void printTree(Node *tree){
 	}
 }
 
+void printHelp(char *fileName){
+	printf("Usage of %s\n",fileName);
+	printf("This will genereate random art and store it as an png\n");
+	printf("use %s -h for help\n",fileName);
+	printf("%s [fileName] [stackDepth]\n",fileName);
+	printf("fileName - to where the generated file should be stored\n");
+	printf("stackDepth - how deep the nested expressions should get\n");
+	printf("NOTE: doesn't support output to stdout\n");
+}
+
 
 int main(int32_t argc, char **argv){
+	if(argc > 1){
+		if(argv[1][0] == 0){
+			printHelp(argv[0]);
+			return 0;
+		}
+		if(argv[1][0] == '-' && argv[1][1] == 'h'){
+			printHelp(argv[0]);
+			return 0;
+		}
+		fileName = argv[1];
+	}
+	if(argc > 2){
+		scanf("%i",&stackDepth);
+	}
 	uint32_t seed = time(0);
 	srandom(seed);
 	Node *tree = createTree(stackDepth,1);
