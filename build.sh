@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-gcc main.c -lm -ggdb
+gcc main.c -lm -ggdb -O2

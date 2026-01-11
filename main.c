@@ -305,11 +305,14 @@ int main(int32_t argc, char **argv){
 	uint32_t seed = time(0);
 	srandom(seed);
 	Node *tree = createTree(stackDepth,1);
+	printTree(tree);
+	puts("");
 	Color c;
 	float curX;
 	float curY;
 	pixels = malloc(sizeof(uint32_t) * imageSize * imageSize);
 	for(int32_t ox = 0;ox < imageSize;ox++){
+		printf("%i\b\b\b\b\b\b",ox);
 		for(int32_t oy = 0;oy < imageSize;oy++){
 			curX = (((float)ox) / imageSize) * 2.0F - 1.0F;
 			curY = (((float)oy) / imageSize) * 2.0F - 1.0F;
@@ -324,6 +327,4 @@ int main(int32_t argc, char **argv){
 		}
 	}
 	stbi_write_png(fileName,imageSize,imageSize,4 /*RGBA*/,pixels,imageSize * sizeof(uint32_t));
-	printTree(tree);
-	puts("");
 }
