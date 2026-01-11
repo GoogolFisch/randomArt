@@ -267,8 +267,20 @@ int main(int32_t argc, char **argv){
 		fileName = argv[1];
 	}
 	if(argc > 2){
-		scanf("%i",&stackDepth);
+		int32_t sd = 0;
+		char *agv = argv[2];
+		while(*agv != 0){
+			if(*agv <= '0' || *agv >= '9')
+				continue;
+			sd *= 10;
+			sd += *agv - '0';
+			agv++;
+		}
+		if(sd != 0)
+			stackDepth = sd;
 	}
+	printf("stack: %i\n",stackDepth);
+	printf("filename: %s\n",fileName);
 	uint32_t seed = time(0);
 	srandom(seed);
 	Node *tree = createTree(stackDepth,1);
