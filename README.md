@@ -2,6 +2,7 @@
 random art made with C
 
 ## Preview of images
-![blue_orange](/img/blue_orange.png)
-![green_curve](/img/green_curve.png)
-![other_stuff](/img/universe_wave.png)
+![blue-orange](/img/blue_orange.png)
+![green-curve](/img/green_curve.png)
+![other-stuff](/img/universe_wave.png)
+![gray-with-colors](/img/gray_with_colors.png)
