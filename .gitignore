@@ -1,5 +1,6 @@
 # dont add _pic files
 *_pic.png
+filename.png
 # Prerequisites
 *.d
 

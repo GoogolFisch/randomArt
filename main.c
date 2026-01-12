@@ -8,6 +8,8 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#define ARG_PARSE_IMPLEMENTATION
+#include "arg_parse.h"
 
 
 typedef union PixelStr{
@@ -247,62 +249,32 @@ void printHelp(char *fileName){
 	printf("Usage of %s\n",fileName);
 	printf("This will genereate random art and store it as an png\n");
 	printf("use %s -h for help\n",fileName);
-	printf("%s [fileName] [stackDepth=10] [imageSize=400]\n",fileName);
-	printf("fileName - to where the generated file should be stored\n");
-	printf("stackDepth - how deep the nested expressions should get\n");
-	printf("imageSize - how big the output image should be\n");
-	printf("NOTE: doesn't support output to stdout\n");
+	printf("%s [OPTION]\n",fileName);
+	printf("file=filename.png -(fl) to where the generated file should be stored\n");
+	printf("stack=10          -(st) how deep the nested expressions should get\n");
+	printf("size=400          -(sz) how big the output image should be\n");
+	printf("seed=???          - set a seed to controll the generator\n");
+
 }
 
 
 int main(int32_t argc, char **argv){
-	if(argc > 1){
-		if(argv[1][0] == 0){
-			printHelp(argv[0]);
-			return 0;
-		}
-		if(argv[1][0] == '-' && argv[1][1] == 'h'){
-			printHelp(argv[0]);
-			return 0;
-		}
-		fileName = argv[1];
+	if(getArgumentExists(argc,argv,"-h")){
+		printHelp(argv[0]);
+		return 0;
 	}
-	int32_t sd;
-	char *agv;
-	if(argc > 2){
-		sd = 0;
-		agv = argv[2];
-		while(*agv != 0){
-			if(*agv < '0' || *agv > '9'){
-				agv++;
-				continue;
-			}
-			sd *= 10;
-			sd += *agv - '0';
-			agv++;
-		}
-		if(sd != 0)
-			stackDepth = sd;
-	}
-	if(argc > 3){
-		sd = 0;
-		agv = argv[3];
-		while(*agv != 0){
-			if(*agv < '0' || *agv > '9'){
-				agv++;
-				continue;
-			}
-			sd *= 10;
-			sd += *agv - '0';
-			agv++;
-		}
-		if(sd != 0)
-			imageSize = sd;
-	}
+	uint32_t seed = time(0);
+	getArgumentUInt32(argc,argv,"st=",&stackDepth);
+	getArgumentUInt32(argc,argv,"sz=",&imageSize);
+	getArgumentString(argc,argv,"fl=",&fileName);
+	getArgumentUInt32(argc,argv,"stack=",&stackDepth);
+	getArgumentUInt32(argc,argv,"size=",&imageSize);
+	getArgumentString(argc,argv,"file=",&fileName);
+	getArgumentUInt32(argc,argv,"seed=",&seed);
 	printf("stack: %i\n",stackDepth);
 	printf("filename: %s\n",fileName);
 	printf("imageSize: %i\n",imageSize);
-	uint32_t seed = time(0);
+	printf("seed: %u\n",seed);
 	srandom(seed);
 	Node *tree = createTree(stackDepth,1);
 	printTree(tree);
