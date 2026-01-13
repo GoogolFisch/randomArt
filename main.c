@@ -85,8 +85,9 @@ Node *createTree(int32_t depth,int32_t flags){
 	//
 	if(out->operation == OP_RAW){
 		// normalise the float?
-		rnd2 = (random() & 0xbf7fffff) | 0x3f000000;
+		rnd2 = (random() & 0x407fffff) | 0x40000000;
 		col = *(float*)(&rnd2);
+		col -= 3.0;
 		out->color.r = col;
 		out->color.g = col;
 		out->color.b = col;
