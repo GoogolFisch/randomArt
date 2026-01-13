@@ -41,6 +41,7 @@ typedef enum OP{
 	OP_TRI,
 	//
 	OP_SIN,
+	OP_SQRT,
 	//
 	OP_ADD,
 	OP_SUB,
@@ -144,6 +145,14 @@ Color collapsTree(Node *tree,float x,float y){
 		out.r = sinf(c1.r);
 		out.g = sinf(c1.g);
 		out.b = sinf(c1.b);
+	} else if(tree->operation == OP_SQRT){
+		c1 = collapsTree(tree->down[0],x,y);
+		if(c1.r > 0)out.r = sqrtf(c1.r);
+		else out.r = -sqrtf(-c1.r);
+		if(c1.g > 0)out.g = sqrtf(c1.g);
+		else out.g = -sqrtf(-c1.g);
+		if(c1.b > 0)out.b = sqrtf(c1.b);
+		else out.b = -sqrtf(-c1.b);
 	} else if(tree->operation == OP_ADD){
 		out.r = c1.r + c2.r;
 		out.g = c1.g + c2.g;
@@ -183,13 +192,13 @@ Color collapsTree(Node *tree,float x,float y){
 }
 void printTree(Node *tree){
 	if(tree->operation == OP_RAW){
-		printf("OP_RAW(%f,%f,%f)",tree->color.r,tree->color.g,tree->color.b);
+		printf("RAW(%f,%f,%f)",tree->color.r,tree->color.g,tree->color.b);
 	}else if(tree->operation == OP_X){
 		fputs("X",stdout);
 	}else if(tree->operation == OP_Y){
 		fputs("Y",stdout);
 	}else if(tree->operation == OP_TRI){
-		fputs("OP_TRI(",stdout);
+		fputs("TRI(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
@@ -197,47 +206,51 @@ void printTree(Node *tree){
 		printTree(tree->down[2]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_SIN){
-		fputs("OP_SIN(",stdout);
+		fputs("SIN(",stdout);
+		printTree(tree->down[0]);
+		fputs(")",stdout);
+	}else if(tree->operation == OP_SQRT){
+		fputs("SQRT(",stdout);
 		printTree(tree->down[0]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_ADD){
-		fputs("OP_ADD(",stdout);
+		fputs("ADD(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_SUB){
-		fputs("OP_SUB(",stdout);
+		fputs("SUB(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_MUL){
-		fputs("OP_MUL(",stdout);
+		fputs("MUL(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_DIV){
-		fputs("OP_DIV(",stdout);
+		fputs("DIV(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_MOD){
-		fputs("OP_MOD(",stdout);
+		fputs("MOD(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_DOT){
-		fputs("OP_DOT(",stdout);
+		fputs("DOT(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
 		fputs(")",stdout);
 	}else if(tree->operation == OP_CROSS){
-		fputs("OP_CROSS(",stdout);
+		fputs("CROSS(",stdout);
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
