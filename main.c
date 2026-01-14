@@ -55,11 +55,6 @@ typedef enum OP{
 	//
 	OP_UPPER_BOUND,
 	//
-	/*
-	OP_MUL,
-	OP_DIV,
-	OP_MOD,
-	// */
 } OP;
 typedef struct Node{
 	OP operation;
@@ -128,8 +123,8 @@ Color collapsTree(Node *tree,float x,float y){
 	}
 	if(tree->operation == OP_RAW){
 		out.r = tree->color.r;
-		out.g = tree->color.g;
-		out.b = tree->color.b;
+		out.g = tree->color.r;
+		out.b = tree->color.r;
 	} else if(tree->operation == OP_X){
 		out.r = x; out.g = x; out.b = x;
 	} else if(tree->operation == OP_Y){
@@ -193,7 +188,7 @@ Color collapsTree(Node *tree,float x,float y){
 }
 void printTree(Node *tree){
 	if(tree->operation == OP_RAW){
-		printf("RAW(%f,%f,%f)",tree->color.r,tree->color.g,tree->color.b);
+		printf("RAW(%f)",tree->color.r);
 	}else if(tree->operation == OP_X){
 		fputs("X",stdout);
 	}else if(tree->operation == OP_Y){
@@ -216,42 +211,20 @@ void printTree(Node *tree){
 		fputs(")",stdout);
 	}else if(tree->operation == OP_ADD){
 		fputs("ADD(",stdout);
-		printTree(tree->down[0]);
-		fputs(",",stdout);
-		printTree(tree->down[1]);
-		fputs(")",stdout);
 	}else if(tree->operation == OP_SUB){
 		fputs("SUB(",stdout);
-		printTree(tree->down[0]);
-		fputs(",",stdout);
-		printTree(tree->down[1]);
-		fputs(")",stdout);
 	}else if(tree->operation == OP_MUL){
 		fputs("MUL(",stdout);
-		printTree(tree->down[0]);
-		fputs(",",stdout);
-		printTree(tree->down[1]);
-		fputs(")",stdout);
 	}else if(tree->operation == OP_DIV){
 		fputs("DIV(",stdout);
-		printTree(tree->down[0]);
-		fputs(",",stdout);
-		printTree(tree->down[1]);
-		fputs(")",stdout);
 	}else if(tree->operation == OP_MOD){
 		fputs("MOD(",stdout);
-		printTree(tree->down[0]);
-		fputs(",",stdout);
-		printTree(tree->down[1]);
-		fputs(")",stdout);
 	}else if(tree->operation == OP_DOT){
 		fputs("DOT(",stdout);
-		printTree(tree->down[0]);
-		fputs(",",stdout);
-		printTree(tree->down[1]);
-		fputs(")",stdout);
 	}else if(tree->operation == OP_CROSS){
 		fputs("CROSS(",stdout);
+	}
+	if(tree->operation >= OP_ADD){
 		printTree(tree->down[0]);
 		fputs(",",stdout);
 		printTree(tree->down[1]);
