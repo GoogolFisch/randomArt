@@ -71,12 +71,6 @@ void jit_buffer_mark(JitBuffer *ins,int32_t flag){
    //#include "platform/windows.c"
 #else
    //#include "platform/posix.c"
-#endif
-
-#if defined(__aarch64__) || defined(_M_ARM64)
-   //#include "arch/aarch64.c"
-#elif defined(__x86_64__) || defined(_M_AMD64)
-
 JitCode *jit_create_code(JitBuffer *ins){
 	JitCode *jc = malloc(sizeof(JitCode));
 	//jc->len = ins->filled;
@@ -98,6 +92,12 @@ int jit_free_code(JitCode *code){
 		return 1;
 	return 0;
 }
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64)
+   //#include "arch/aarch64.c"
+#elif defined(__x86_64__) || defined(_M_AMD64)
+
    //#include "arch/x86_64.c"
 #endif
 

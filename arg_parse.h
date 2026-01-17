@@ -9,6 +9,10 @@ int32_t getArgumentInt32 (int32_t argc,char **argv,char *baseString, int32_t *ou
 int32_t getArgumentUInt32(int32_t argc,char **argv,char *baseString,uint32_t *output);
 int32_t getArgumentString(int32_t argc,char **argv,char *baseString, char   **output);
 int32_t getArgumentExists(int32_t argc,char **argv,char *baseString                 );
+
+int32_t getArgumentUInt32Range(
+		int32_t argc,char **argv,
+		char *baseString, int32_t *out1,int32_t *out2);
 #endif
 
 #ifdef ARG_PARSE_IMPLEMENTATION
@@ -90,6 +94,46 @@ int32_t getArgumentExists(int32_t argc,char **argv,char *baseString){
 	}
 	if(argc == argg)
 		return 0;
+	return argg;
+}
+//
+int32_t getArgumentUInt32Range(
+		int32_t argc,char **argv,
+		char *baseString, int32_t *out1,int32_t *out2){
+	char *real = NULL;
+	int32_t argg = getArgumentString(argc,argv,baseString,&real);
+	if(real == NULL)
+		return 0;
+	int32_t idx = 0;
+	// counting
+	int32_t sd = 0;
+	// number 1
+	while(real[idx] != 0){
+		if(real[idx] < '0' || real[idx] > '9'){
+			idx++;break;
+		}
+		sd *= 10;
+		sd += real[idx] - '0';
+		idx++;
+	}
+	*out1 = sd;
+	// skip inbetween
+	while(real[idx] != 0){
+		if(real[idx] >= '0' && real[idx] <= '9')
+			break;
+		idx++;
+	}
+	sd = 0;
+	// number 2
+	while(real[idx] != 0){
+		if(real[idx] < '0' || real[idx] > '9'){
+			idx++;break;
+		}
+		sd *= 10;
+		sd += real[idx] - '0';
+		idx++;
+	}
+	*out2 = sd;
 	return argg;
 }
 

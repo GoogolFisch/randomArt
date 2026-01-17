@@ -83,8 +83,13 @@ Node *createTree(int32_t depth,int32_t flags){
 		out->operation = OP_SIN + rnd % (OP_UPPER_BOUND - OP_SIN);
 	else
 		out->operation = rnd % OP_UPPER_BOUND;
-	if(flags & 1 == 0)
-		out->operation = OP_RAW;
+	if(flags & 1 == 1 && out->operation == OP_TRI){
+		out->operation = OP_SIN + rnd % (OP_UPPER_BOUND - OP_SIN);
+	}
+	if(flags & 2 == 2 && out->operation < OP_TRI && depth > 0){
+		rnd = random();
+		out->operation = OP_SIN + rnd % (OP_UPPER_BOUND - OP_SIN);
+	}
 	//
 	if(out->operation == OP_RAW){
 		// normalise the float?
@@ -95,12 +100,16 @@ Node *createTree(int32_t depth,int32_t flags){
 		out->color.g = col;
 		out->color.b = col;
 	} else if(out->operation == OP_TRI){
-		out->down[0] = createTree(depth - 1,flags & ~1);
-		out->down[1] = createTree(depth - 1,flags & ~1);
-		out->down[2] = createTree(depth - 1,flags & ~1);
+		flags |= 1;
+		flags &= ~2;
+		out->down[0] = createTree(depth - 1,flags);
+		out->down[1] = createTree(depth - 1,flags);
+		out->down[2] = createTree(depth - 1,flags);
 	} else if(out->operation >= OP_DOT){
-		out->down[0] = createTree(depth - 1,flags | 1);
-		out->down[1] = createTree(depth - 1,flags | 1);
+		flags |= 2;
+		flags &= ~1;
+		out->down[0] = createTree(depth - 1,flags);
+		out->down[1] = createTree(depth - 1,flags);
 	} else if(out->operation >= OP_ADD){
 		out->down[0] = createTree(depth - 1,flags);
 		out->down[1] = createTree(depth - 1,flags);
@@ -249,6 +258,8 @@ void printHelp(char *fileName){
 	printf("stack=10          -(st) how deep the nested expressions should get\n");
 	printf("size=400          -(sz) how big the output image should be\n");
 	printf("seed=???          - set a seed to controll the generator\n");
+	printf("--jit             - to enable jit compiler\n");
+	printf("tree=?            - if an tree file should be used\n");
 
 }
 
@@ -289,11 +300,20 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		jit_append_cStr(buf,"\x0f\x28\x04\x24");
 	}else if(tree->operation == OP_SIN){
 		compileTreeInsert(buf,tree->down[0]);
-		jit_append_cStr(buf,"\x48\xb8"); // mov rax, &sinf
+		jit_append_cStr(buf,"\x0f\x29\x04\x24"); // movaps [rsp],xmm0
+		jit_append_cStr(buf,"\x48\xbb"); // mov rbx, &sinf
 		float (*refing)(float);
 		refing = sinf;
 		jit_append_lenStr(buf,(char*)&refing,sizeof(size_t));
-		jit_append_cStr(buf,"\xff\xd0"); // call rax
+		jit_append_cStr(buf,"\xf3\x0f\x10\x04\x24"); // movss xmm0,[rsp]
+		jit_append_cStr(buf,"\xff\xd3"); // call rbx
+		jit_append_cStr(buf,"\xf3\x0f\x11\x04\x24"); // movss [rsp],xmm0
+		jit_append_cStr(buf,"\xf3\x0f\x10\x44\x24\x04"); // movss xmm0,[rsp + 4]
+		jit_append_cStr(buf,"\xff\xd3"); // call rbx
+		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x04"); // movss [rsp + 4],xmm0
+		jit_append_cStr(buf,"\xf3\x0f\x10\x44\x24\x08"); // movss xmm0,[rsp + 8]
+		jit_append_cStr(buf,"\xff\xd3"); // call rbx
+		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x08"); // movss [rsp + 8],xmm0
 	}else if(tree->operation == OP_SQRT){
 		compileTreeInsert(buf,tree->down[0]);
 		jit_append_cStr(buf,"\x0f\x51\xc0"); // sqrtps xmm1,xmm1
@@ -322,18 +342,23 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		jit_append_cStr(buf,"\x0f\x28\x0c\x24"); // movaps xmm1,[rsp]
 		jit_append_cStr(buf,"\x0f\x5e\xc1"); // divps xmm0,xmm1
 	}else if(tree->operation == OP_MOD){
+		//
 		compileTreeInsert(buf,tree->down[0]);
 		jit_append_cStr(buf,"\x0f\x29\x04\x24"); // movaps [rsp],xmm0
+		jit_append_cStr(buf,"\x48\x83\xec\x10"); // sub rsp,0x10
 		compileTreeInsert(buf,tree->down[1]);
-		jit_append_cStr(buf,"\x0f\x28\x0c\x24"); // movaps xmm1,[rsp]
+		jit_append_cStr(buf,"\x0f\x29\x04\x24"); // movaps [rsp],xmm0
+		//jit_append_cStr(buf,"\x0f\x28\x0c\x24"); // movaps xmm1,[rsp]
 		//
-		jit_append_cStr(buf,"\x48\xb8"); // mov rax, &sinf
+		jit_append_cStr(buf,"\x48\x83\xec\x10"); // sub rsp,0x10
+		//
+		jit_append_cStr(buf,"\x48\xbb"); // mov rbx, &fmodf
 		float (*refing)(float,float);
 		refing = fmodf;
 		jit_append_lenStr(buf,(char*)&refing,sizeof(size_t));
-		jit_append_cStr(buf,"\xff\xd0"); // call rax
+		jit_append_cStr(buf,"\xff\xd3"); // call rax
 		// TODO
-		fputs("MOD(",stdout);
+		jit_append_cStr(buf,"\x48\x83\xc4\x10"); // add rsp,0x10
 	}else if(tree->operation == OP_DOT){
 		compileTreeInsert(buf,tree->down[0]);
 		jit_append_cStr(buf,"\x0f\x29\x04\x24"); // movaps [rsp],xmm0
@@ -347,7 +372,8 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		jit_append_cStr(buf,"\x0f\x15\xc9"); // unpckhps xmm1,xmm1
 		jit_append_cStr(buf,"\xf3\x0f\x58\xc1"); // addss  xmm0,xmm1
 	}else if(tree->operation == OP_CROSS){
-		fputs("CROSS(",stdout);
+		compileTreeInsert(buf,tree->down[0]);
+		// TODO
 	}
 	jit_buffer_mark(buf,256 | (buf->flags & ~128));
 	jit_append_cStr(buf,"\x48\x83\xc4\x10"); // add rsp,0x10
@@ -359,6 +385,7 @@ JitCode *compileTree(Node *tree){
 
 	JitCode *jitCall = NULL;
 	jit_append_cStr(&jitBuf,"\x55"); // push rbp
+	jit_append_cStr(&jitBuf,"\x53"); // push rbx
 	jit_append_cStr(&jitBuf,"\x48\x89\xe5"); // mov rbp,rsp
 	jit_append_cStr(&jitBuf,"\x48\xff\xcc"); // dec rsp
 	jit_append_cStr(&jitBuf,"\x48\x83\xe4\xf0"); // and rsp,-0x10
@@ -398,6 +425,7 @@ JitCode *compileTree(Node *tree){
 	jit_append_cStr(&jitBuf,"\x48\x83\xc4\x20"); // add rsp,0x20
 	jit_append_cStr(&jitBuf,"\x5d"); // pop rbp
 	jit_append_cStr(&jitBuf,"\x48\x89\xec"); // mov rsp,rbp
+	jit_append_cStr(&jitBuf,"\x5b"); // pop rbx
 	jit_append_cStr(&jitBuf,"\x5d"); // pop rbp
 	jit_append_cStr(&jitBuf,"\xc3"); // ret
 	// finalise code!
@@ -444,7 +472,7 @@ int main(int32_t argc, char **argv){
 	srandom(seed);
 	Node *tree;
 	if(specialTree) tree = customTree();
-	else tree = createTree(stackDepth,1);
+	else tree = createTree(stackDepth,0);
 	printTree(tree);
 	puts("");
 	Color c;
