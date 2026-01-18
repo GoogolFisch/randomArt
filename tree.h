@@ -236,7 +236,7 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x04");
 		//movss DWORD [rsp+0x8],xmm0
 		compileTreeInsert(buf,tree->down[2]);
-		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x04");
+		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x08");
 		//movaps xmm0,[rsp]
 		jit_append_cStr(buf,"\x0f\x28\x04\x24");
 	}else if(tree->operation == OP_SIN){
