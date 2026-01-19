@@ -339,9 +339,9 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		code_append_put_store(buf);
 		compileTreeInsert(buf,tree->down[1]);
 		jit_append_cStr(buf,"\x0f\x28\x14\x24"); // movaps xmm2,[rsp]
-		jit_append_cStr(buf,"\x0f\x28\xca"); // movaps xmm1,xmm0
-		jit_append_cStr(buf,"\x0f\xc6\xc9\xd2"); // shufps xmm1,xmm1,0xd2
-		jit_append_cStr(buf,"\x0f\xc6\xd2\xc9"); // shufps xmm2,xmm2,0xc9
+		jit_append_cStr(buf,"\x0f\x28\xc8"); // movaps xmm1,xmm0
+		jit_append_cStr(buf,"\x0f\xc6\xc9\xc9"); // shufps xmm1,xmm1,0xc9
+		jit_append_cStr(buf,"\x0f\xc6\xd2\xd2"); // shufps xmm2,xmm2,0xd2
 		jit_append_cStr(buf,"\x0f\x59\xca"); // mulps xmm1,xmm2
 		jit_append_cStr(buf,"\x0f\xc6\xc0\xd2"); // shufps xmm0,xmm0,0xd2
 		jit_append_cStr(buf,"\x0f\xc6\xd2\xd2"); // shufps xmm2,xmm2,0xd2
