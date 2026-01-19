@@ -140,8 +140,8 @@ void code_append_stack_xy(JitBuffer *ins){
 }
 void code_append_stack_end(JitBuffer *ins){
 	jit_append_cStr(ins,"\x0f\x28\xc8"); // movaps xmm1,xmm0
-	jit_append_cStr(ins,"\x0f\xc6\xc0\x54"); // shufps xmm0,xmm0, 0x05
-	jit_append_cStr(ins,"\x0f\xc6\xc9\x56"); // shufps xmm1,xmm1, 0xaf
+	jit_append_cStr(ins,"\x0f\xc6\xc9\x06"); // shufps xmm1,xmm1, 0x06
+	jit_append_cStr(ins,"\x0f\xc6\xc0\x04"); // shufps xmm0,xmm0, 0x04
 	//
 	jit_append_cStr(ins,"\x48\x83\xc4\x20"); // add rsp,0x20
 	jit_append_cStr(ins,"\x5d"); // pop rbp

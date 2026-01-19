@@ -271,7 +271,8 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		code_append_put_store(buf);
 		compileTreeInsert(buf,tree->down[1]);
 		jit_append_cStr(buf,"\x0f\x28\x0c\x24"); // movaps xmm1,[rsp]
-		jit_append_cStr(buf,"\x0f\x5c\xc1"); // subps xmm0,xmm1
+		jit_append_cStr(buf,"\x0f\x5c\xc8"); // subps xmm1,xmm0
+		jit_append_cStr(buf,"\x0f\x28\xc1"); // movaps xmm0,xmm1
 	}else if(tree->operation == OP_MUL){
 		compileTreeInsert(buf,tree->down[0]);
 		code_append_put_store(buf);
@@ -312,8 +313,7 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		jit_append_cStr(buf,"\xf3\x0f\x10\x4c\x24\x18");//movss  xmm1,[rsp+0x14]
 		jit_append_cStr(buf,"\xff\xd3"); // call rbx (&fmodf)
 		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x08");//movss  [rsp+0x08],xmm0
-		//movaps xmm0,[rsp]
-		jit_append_cStr(buf,"\x0f\x28\x04\x24");
+		jit_append_cStr(buf,"\x0f\x28\x04\x24"); //movaps xmm0,[rsp]
 		// TODO
 		code_append_stack_up(buf);
 	}else if(tree->operation == OP_DOT){
@@ -328,8 +328,25 @@ void compileTreeInsert(JitBuffer *buf,Node *tree){
 		jit_append_cStr(buf,"\xf3\x0f\x58\xc1"); // addss  xmm0,xmm1
 		jit_append_cStr(buf,"\x0f\x15\xc9"); // unpckhps xmm1,xmm1
 		jit_append_cStr(buf,"\xf3\x0f\x58\xc1"); // addss  xmm0,xmm1
+		jit_append_cStr(buf,"\xf3\x0f\x11\x04\x24"); // movss [rsp],xmm0
+		// load out!
+		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x04"); // movss [rsp + 4],xmm0
+		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x08"); // movss [rsp + 8],xmm0
+		jit_append_cStr(buf,"\xf3\x0f\x11\x44\x24\x0c"); // movss [rsp + 8],xmm0
+		jit_append_cStr(buf,"\x0f\x28\x04\x24"); // movaps xmm0,[rsp]
 	}else if(tree->operation == OP_CROSS){
 		compileTreeInsert(buf,tree->down[0]);
+		code_append_put_store(buf);
+		compileTreeInsert(buf,tree->down[1]);
+		jit_append_cStr(buf,"\x0f\x28\x14\x24"); // movaps xmm2,[rsp]
+		jit_append_cStr(buf,"\x0f\x28\xca"); // movaps xmm1,xmm0
+		jit_append_cStr(buf,"\x0f\xc6\xc9\xd2"); // shufps xmm1,xmm1,0xd2
+		jit_append_cStr(buf,"\x0f\xc6\xd2\xc9"); // shufps xmm2,xmm2,0xc9
+		jit_append_cStr(buf,"\x0f\x59\xca"); // mulps xmm1,xmm2
+		jit_append_cStr(buf,"\x0f\xc6\xc0\xd2"); // shufps xmm0,xmm0,0xd2
+		jit_append_cStr(buf,"\x0f\xc6\xd2\xd2"); // shufps xmm2,xmm2,0xd2
+		jit_append_cStr(buf,"\x0f\x59\xc2"); // mulps xmm0,xmm2
+		jit_append_cStr(buf,"\x0f\x5c\xc1"); // subps xmm0,xmm1
 		// TODO
 	}
 	code_append_stack_up(buf);
@@ -366,6 +383,7 @@ Node *customTreeWithFile(FILE *fptr){
 		if((got & 0x1f) >= ('X' & 0x1f))
 			break;
 		if(got <= '9'){
+			fseek(fptr,-1,SEEK_CUR);
 			calc = 0x217;
 			break;
 		}
