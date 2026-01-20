@@ -38,6 +38,7 @@ typedef union PixelStr{
 PixelStr *pixels;
 bool doJit = false;
 bool specialTree = false;
+bool doSimplifyTree = false;
 bool beVerbouse = 0;
 int32_t imageScale = 400;
 int32_t imageWidth, imageHeight;
@@ -49,6 +50,7 @@ char *treeName = NULL;
 // 
 void printHelp(char *fileName){
 	printf("Usage of %s\n",fileName);
+	printf("Version: 0.0.0\n");
 	printf("This will genereate random art and store it as an png\n");
 	printf("use %s -h for help\n",fileName);
 	printf("%s [OPTION]\n",fileName);
@@ -59,7 +61,8 @@ void printHelp(char *fileName){
 	printf("tree=?            - if an tree file should be used\n");
 	printf("size=..x..        - the output size of the image\n");
 	printf("--jit             - to enable jit compiler\n");
-	printf("-v                - show extra data\n");
+	printf("--simpl           - remove bad paths\n");
+	printf("-v                - show extra information\n");
 }
 
 Node *customTreeMy(void){
@@ -83,6 +86,8 @@ int main(int32_t argc, char **argv){
 		doJit = true;
 	if(getArgumentExists(argc,argv,"--tree"))
 		specialTree = true;
+	if(getArgumentExists(argc,argv,"--simpl"))
+		doSimplifyTree = true;
 	if(getArgumentExists(argc,argv,"-v"))
 		beVerbouse = true;
 	uint32_t seed = time(0);
@@ -112,6 +117,12 @@ int main(int32_t argc, char **argv){
 		tree = customTreeMy();
 	else
 		tree = createTree(stackDepth,0,stackDepth);
+	if(tree == NULL){
+		printf("ERROR! no tree could be created!\n");
+		return 0;
+	}
+	if(doSimplifyTree)
+		simplifyTree(tree);
 	printTree(tree);
 	puts("");
 	Color c;

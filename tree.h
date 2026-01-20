@@ -36,8 +36,10 @@ void freeTree(Node *tree);
 Color collapsTree(Node *tree,float x,float y);
 void printTree(Node *tree);
 void compileTreeInsert(JitBuffer *buf,Node *tree);
+int32_t simplifyTree(Node *tree);
 JitCode *compileTree(Node *tree);
 Node *customTreeFFile(char *name);
+
 
 #endif
 #ifdef TREE_IMPLEMENTATION
@@ -218,6 +220,268 @@ void printTree(Node *tree){
 	}
 }
 
+int32_t simplifyTree(Node *tree){
+	int32_t flags = 0;
+	int32_t f0,f1,f2;
+	float fl0,fl1,fl2;
+	Node *refrence;
+	if(tree->operation >= OP_ADD){
+		f0 = simplifyTree(tree->down[0]);
+		f1 = simplifyTree(tree->down[1]);
+		flags = ((f0 | f1) & 0xff) | (f0 & f1);
+	} else if(tree->operation >= OP_SIN){
+		f0 = simplifyTree(tree->down[0]);
+		flags = f0;
+	}
+	if(tree->operation == OP_RAW){flags = 1;}
+	else if(tree->operation <= OP_Y){ flags = 2; }
+	else if(tree->operation == OP_TRI){
+		f0 = simplifyTree(tree->down[0]);
+		f1 = simplifyTree(tree->down[1]);
+		f2 = simplifyTree(tree->down[2]);
+		flags = 128;
+		flags |= ((f0 | f1 | f2) & 0xff) | (f0 & f1 & f2);
+	}
+	else if(tree->operation == OP_SIN){
+		if(tree->down[0]->operation == OP_RAW){
+			fl0 = tree->down[0]->color.r;
+			fl0 = sinf(fl0);
+			free(tree->down[0]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}
+	} else if(tree->operation == OP_SQRT){
+		if(tree->down[0]->operation == OP_RAW){
+			fl0 = tree->down[0]->color.r;
+			fl0 = sqrtf(fl0);
+			free(tree->down[0]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}
+	}
+	else if(tree->operation == OP_ADD){
+		if(	tree->down[0]->operation == OP_RAW &&
+			tree->down[1]->operation == OP_RAW
+		){
+			fl0 = tree->down[0]->color.r;
+			fl0 += tree->down[1]->color.r;
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}else if(tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 0.0F
+		){
+			refrence = tree->down[0];
+			free(tree->down[1]);
+			tree->operation = refrence->operation;
+			tree->down[0] = refrence->down[0];
+			tree->down[1] = refrence->down[1];
+			tree->down[2] = refrence->down[2];
+		}else if(tree->down[0]->operation == OP_RAW &&
+			tree->down[0]->color.r == 0.0F
+		){
+			refrence = tree->down[1];
+			free(tree->down[0]);
+			tree->operation = refrence->operation;
+			tree->down[0] = refrence->down[0];
+			tree->down[1] = refrence->down[1];
+			tree->down[2] = refrence->down[2];
+		}
+	}else if(tree->operation == OP_SUB){
+		if(	tree->down[0]->operation == OP_RAW &&
+			tree->down[1]->operation == OP_RAW
+		){
+			fl0 = tree->down[0]->color.r;
+			fl0 -= tree->down[1]->color.r;
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}else if(tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 0.0F
+		){
+			refrence = tree->down[0];
+			free(tree->down[1]);
+			tree->operation = refrence->operation;
+			tree->down[0] = refrence->down[0];
+			tree->down[1] = refrence->down[1];
+			tree->down[2] = refrence->down[2];
+		} else if(tree->down[0]->operation < OP_TRI &&
+			tree->down[1]->operation ==
+				tree->down[0]->operation
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0;
+			tree->color.g = 0;
+			tree->color.b = 0;
+		}
+	}else if(tree->operation == OP_MUL){
+		if((tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 0.0F) ||
+			(tree->down[0]->operation == OP_RAW &&
+			tree->down[0]->color.r == 0.0F)
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0.0f;
+			tree->color.g = 0.0f;
+			tree->color.b = 0.0f;
+		}else if(tree->down[0]->operation == OP_RAW &&
+			tree->down[1]->operation == OP_RAW
+		){
+			fl0 = tree->down[0]->color.r;
+			fl0 *= tree->down[1]->color.r;
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}else if(tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 1.0F
+		){
+			refrence = tree->down[0];
+			free(tree->down[1]);
+			tree->operation = refrence->operation;
+			tree->down[0] = refrence->down[0];
+			tree->down[1] = refrence->down[1];
+			tree->down[2] = refrence->down[2];
+		}else if(tree->down[0]->operation == OP_RAW &&
+			tree->down[0]->color.r == 1.0F
+		){
+			refrence = tree->down[1];
+			free(tree->down[0]);
+			tree->operation = refrence->operation;
+			tree->down[0] = refrence->down[0];
+			tree->down[1] = refrence->down[1];
+			tree->down[2] = refrence->down[2];
+		}
+	}else if(tree->operation == OP_DIV){
+		if((tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 0.0F) ||
+			(tree->down[0]->operation == OP_RAW &&
+			tree->down[0]->color.r == 0.0F)
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0.0f;
+			tree->color.g = 0.0f;
+			tree->color.b = 0.0f;
+		}else if(tree->down[0]->operation == OP_RAW &&
+			tree->down[1]->operation == OP_RAW
+		){
+			fl0 = tree->down[0]->color.r;
+			fl0 /= tree->down[1]->color.r;
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}else if(tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 1.0F
+		){
+			refrence = tree->down[0];
+			free(tree->down[1]);
+			tree->operation = refrence->operation;
+			tree->down[0] = refrence->down[0];
+			tree->down[1] = refrence->down[1];
+			tree->down[2] = refrence->down[2];
+		} else if(tree->down[0]->operation < OP_TRI &&
+			tree->down[1]->operation ==
+				tree->down[0]->operation
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 1.0f;
+			tree->color.g = 1.0f;
+			tree->color.b = 1.0f;
+		} else if(tree->down[0]->operation < OP_TRI &&
+			tree->down[1]->operation ==
+				tree->down[0]->operation
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 1.0f;
+			tree->color.g = 1.0f;
+			tree->color.b = 1.0f;
+		}
+	}else if(tree->operation == OP_MOD){
+		if((tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 0.0F) ||
+			(tree->down[0]->operation == OP_RAW &&
+			tree->down[0]->color.r == 0.0F)
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0.0f;
+			tree->color.g = 0.0f;
+			tree->color.b = 0.0f;
+		}else if(tree->down[0]->operation == OP_RAW &&
+			tree->down[1]->operation == OP_RAW
+		){
+			fl0 = tree->down[0]->color.r;
+			fl0 = fmodf(fl0,tree->down[1]->color.r);
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		} else if(tree->down[0]->operation < OP_TRI &&
+			tree->down[1]->operation ==
+				tree->down[0]->operation
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0;
+			tree->color.g = 0;
+			tree->color.b = 0;
+		}
+	}else if(tree->operation == OP_DOT){
+		if(tree->down[0]->operation == OP_RAW &&
+			tree->down[1]->operation == OP_RAW
+		){
+			fl0 = tree->down[0]->color.r;
+			fl0 *= tree->down[1]->color.r;
+			fl0 *= 3;
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = fl0;
+			tree->color.g = fl0;
+			tree->color.b = fl0;
+		}
+		flags &= 0x7f;
+	}else if(tree->operation == OP_CROSS){
+		if((f0 & 128) == 0 && (f1 & 128) == 0){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0.0f;
+			tree->color.g = 0.0f;
+			tree->color.b = 0.0f;
+		}
+	}
+	return flags;
+}
 void compileTreeInsert(JitBuffer *buf,Node *tree){
 	code_append_stack_down(buf);
 	if(tree->operation == OP_RAW){
@@ -451,6 +715,10 @@ Node *customTreeWithFile(FILE *fptr){
 
 Node *customTreeFFile(char *name){
 	FILE *fptr = fopen(name,"r");
+	if(fptr == NULL){
+		printf("ERROR! No file found!\n");
+		return NULL;
+	}
 	Node *out = customTreeWithFile(fptr);
 	fclose(fptr);
 	return out;
