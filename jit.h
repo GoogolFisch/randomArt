@@ -18,7 +18,7 @@ typedef struct JitBuffer{
 	size_t flags;
 }JitBuffer;
 
-void jit_buffer_mark(JitBuffer *ins,int32_t flag);
+void ins(JitBuffer *ins,int32_t flag);
 void jit_append_buffer(JitBuffer *ins,JitBuffer *buffer);
 void jit_append_lenStr(JitBuffer *ins,char *buffer,size_t adding);
 void jit_append_cStr(JitBuffer *ins,char *buffer);
@@ -38,6 +38,9 @@ void code_append_fetch_y(JitBuffer *ins);
 void code_append_fetch_raw(JitBuffer *ins,float raw);
 
 void code_append_put_store(JitBuffer *ins);
+void code_append_tst_div0(JitBuffer *ins);
+
+void cope_append_operation_sqrt(JitBuffer *ins);
 
 /*
 void free_code(Code code)
@@ -189,6 +192,77 @@ void code_append_fetch_raw(JitBuffer *ins,float raw){
 
 void code_append_put_store(JitBuffer *ins){
 	jit_append_cStr(ins,"\x0f\x29\x04\x24"); // movaps [rsp],xmm0
+}
+void code_append_tst_div0(JitBuffer *ins){
+	float flt_1F = 1.0F;
+	float flt_0F = 0.0F;
+	code_append_stack_down(ins);
+	code_append_put_store(ins);
+
+	jit_append_cStr(ins,"\x66\x0f\xef\xc0"); // pxor xmm0,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x10\x0c\x24"); // movss xmm1,[rsp]
+	jit_append_cStr(ins,"\x0f\x2e\xc8"); // ucomiss xmm1,xmm0
+	jit_append_cStr(ins,"\x75\x0f"); // jnz after ; !!!
+	jit_append_cStr(ins,"\xc7\x04\x24"); // movss [rsp],(float)1.0
+	jit_append_lenStr(ins,(char*)&flt_1F,sizeof(float));
+	jit_append_cStr(ins,"\xc7\x44\x24\x10"); // movss [rsp+10],(float)0.0
+	jit_append_lenStr(ins,(char*)&flt_0F,sizeof(float));
+	// after
+	jit_append_cStr(ins,"\xf3\x0f\x10\x4c\x24\x04"); // movss xmm1,[rsp+04]
+	jit_append_cStr(ins,"\x0f\x2e\xc8"); // ucomiss xmm1,xmm0
+	jit_append_cStr(ins,"\x75\x10"); // jnz after ; !!!
+	jit_append_cStr(ins,"\xc7\x44\x24\x04"); // movss [rsp+04],(float)1.0
+	jit_append_lenStr(ins,(char*)&flt_1F,sizeof(float));
+	jit_append_cStr(ins,"\xc7\x44\x24\x14"); // movss [rsp+14],(float)0.0
+	jit_append_lenStr(ins,(char*)&flt_0F,sizeof(float));
+	// after
+	jit_append_cStr(ins,"\xf3\x0f\x10\x4c\x24\x08"); // movss xmm1,[rsp+08]
+	jit_append_cStr(ins,"\x0f\x2e\xc8"); // ucomiss xmm1,xmm0
+	jit_append_cStr(ins,"\x75\x10"); // jnz after ; !!!
+	jit_append_cStr(ins,"\xc7\x44\x24\x08"); // movss [rsp+08],(float)1.0
+	jit_append_lenStr(ins,(char*)&flt_1F,sizeof(float));
+	jit_append_cStr(ins,"\xc7\x44\x24\x18"); // movss [rsp+18],(float)0.0
+	jit_append_lenStr(ins,(char*)&flt_0F,sizeof(float));
+	//
+	jit_append_cStr(ins,"\x0f\x28\x04\x24"); // movaps xmm0,[rsp]
+	code_append_stack_up(ins);
+}
+void cope_append_operation_sqrt(JitBuffer *ins){
+	jit_append_cStr(ins,"\x66\x0f\xef\xc9"); // pxor xmm1,xmm1
+	jit_append_cStr(ins,"\xf3\x0f\x10\x04\x24"); // movss xmm0,[rsp]
+	jit_append_cStr(ins,"\x0f\x2e\xc1"); // ucomiss xmm0,xmm1
+	jit_append_cStr(ins,"\x77\x12"); // ja do positiv1
+	jit_append_cStr(ins,"\xf3\x0f\x5c\xc8"); // subss xmm1,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x51\xc9"); // sqrtss xmm1,xmm1
+	jit_append_cStr(ins,"\x66\x0f\xef\xc0"); // pxor xmm1,xmm1
+	jit_append_cStr(ins,"\xf3\x0f\x5c\xc1"); // subss xmm0,xmm1
+	jit_append_cStr(ins,"\xeb\x04"); // jmp after it1
+	jit_append_cStr(ins,"\xf3\x0f\x51\xc0"); // sqrtps xmm0,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x11\x04\x24"); // movss [rsp],xmm0
+	//
+	jit_append_cStr(ins,"\x66\x0f\xef\xc9"); // pxor xmm1,xmm1
+	jit_append_cStr(ins,"\xf3\x0f\x10\x44\x24\x04"); // movss xmm0,[rsp+4]
+	jit_append_cStr(ins,"\x0f\x2e\xc1"); // ucomiss xmm0,xmm1
+	jit_append_cStr(ins,"\x77\x12"); // ja do positiv1
+	jit_append_cStr(ins,"\xf3\x0f\x5c\xc8"); // subss xmm1,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x51\xc9"); // sqrtss xmm1,xmm1
+	jit_append_cStr(ins,"\x66\x0f\xef\xc0"); // pxor xmm1,xmm1
+	jit_append_cStr(ins,"\xf3\x0f\x5c\xc1"); // subss xmm0,xmm1
+	jit_append_cStr(ins,"\xeb\x04"); // jmp after it1
+	jit_append_cStr(ins,"\xf3\x0f\x51\xc0"); // sqrtps xmm0,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x11\x44\x24\x04"); // movss [rsp+4],xmm0
+	//
+	jit_append_cStr(ins,"\x66\x0f\xef\xc9"); // pxor xmm1,xmm1
+	jit_append_cStr(ins,"\xf3\x0f\x10\x44\x24\x08"); // movss xmm0,[rsp+8]
+	jit_append_cStr(ins,"\x0f\x2e\xc1"); // ucomiss xmm0,xmm1
+	jit_append_cStr(ins,"\x77\x12"); // ja do positiv1
+	jit_append_cStr(ins,"\xf3\x0f\x5c\xc8"); // subss xmm1,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x51\xc9"); // sqrtss xmm1,xmm1
+	jit_append_cStr(ins,"\x66\x0f\xef\xc0"); // pxor xmm1,xmm1
+	jit_append_cStr(ins,"\xf3\x0f\x5c\xc1"); // subss xmm0,xmm1
+	jit_append_cStr(ins,"\xeb\x04"); // jmp after it1
+	jit_append_cStr(ins,"\xf3\x0f\x51\xc0"); // sqrtps xmm0,xmm0
+	jit_append_cStr(ins,"\xf3\x0f\x11\x44\x24\x08"); // movss [rsp+8],xmm0
 }
    //#include "arch/x86_64.c"
 #endif
