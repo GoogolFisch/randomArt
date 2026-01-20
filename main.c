@@ -125,6 +125,9 @@ int main(int32_t argc, char **argv){
 		simplifyTree(tree);
 	printTree(tree);
 	puts("");
+	if(isBoringTree(tree)){
+		printf("INFO: This tree could boring?\n");
+	}
 	Color c;
 	//
 	JitCode *jitCall;

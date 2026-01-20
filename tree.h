@@ -40,6 +40,8 @@ int32_t simplifyTree(Node *tree);
 JitCode *compileTree(Node *tree);
 Node *customTreeFFile(char *name);
 
+// true => this tree is boring!
+bool isBoringTree(Node *tree);
 
 #endif
 #ifdef TREE_IMPLEMENTATION
@@ -456,7 +458,18 @@ int32_t simplifyTree(Node *tree){
 			tree->color.b = 0;
 		}
 	}else if(tree->operation == OP_DOT){
-		if(tree->down[0]->operation == OP_RAW &&
+		if((tree->down[1]->operation == OP_RAW &&
+			tree->down[1]->color.r == 0.0F) ||
+			(tree->down[0]->operation == OP_RAW &&
+			tree->down[0]->color.r == 0.0F)
+		){
+			free(tree->down[0]);
+			free(tree->down[1]);
+			tree->operation = OP_RAW;
+			tree->color.r = 0.0f;
+			tree->color.g = 0.0f;
+			tree->color.b = 0.0f;
+		}else if(tree->down[0]->operation == OP_RAW &&
 			tree->down[1]->operation == OP_RAW
 		){
 			fl0 = tree->down[0]->color.r;
@@ -722,6 +735,33 @@ Node *customTreeFFile(char *name){
 	Node *out = customTreeWithFile(fptr);
 	fclose(fptr);
 	return out;
+}
+bool isBoringTree(Node *tree){
+	const int arSize = 4;
+	Color testing[arSize];
+	testing[0] = collapsTree(tree, 0.5f, 0.5f);
+	testing[1] = collapsTree(tree,-0.5f, 0.5f);
+	testing[2] = collapsTree(tree, 0.5f,-0.5f);
+	testing[3] = collapsTree(tree,-0.5f,-0.5f);
+	const float epsilon = 0.05;
+	float err;
+	int counted = 0;
+	Color col;
+	for(int ox = 0;ox < arSize - 1;ox++){
+		for(int oy = ox + 1;oy < arSize;oy++){
+			col.r = testing[ox].r - testing[oy].r;
+			col.g = testing[ox].g - testing[oy].g;
+			col.b = testing[ox].b - testing[oy].b;
+			err = fabsf(col.r) + fabsf(col.g) + fabsf(col.b);
+			if(err < epsilon)
+				// boring!
+				continue;
+			// count intersting
+			counted++;
+		}
+	}
+	// see: I have 6 pos diff, only 3 req => interesting(false)
+	return arSize * (arSize - 1) / 4 > counted;
 }
 
 #endif
