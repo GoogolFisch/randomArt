@@ -36,10 +36,12 @@ typedef union PixelStr{
 	};
 } PixelStr;
 PixelStr *pixels;
-bool doJit = false;
-bool specialTree = false;
+bool doJit          = false;
+bool specialTree    = false;
 bool doSimplifyTree = false;
-bool beVerbouse = 0;
+bool beVerbouse     = false;
+bool noBoringTree   = false;
+
 int32_t imageScale = 400;
 int32_t imageWidth, imageHeight;
 int32_t stackDepth = 10;
@@ -62,6 +64,7 @@ void printHelp(char *fileName){
 	printf("size=..x..        - the output size of the image\n");
 	printf("--jit             - to enable jit compiler\n");
 	printf("--simpl           - remove bad paths\n");
+	printf("--no-boring       - regenerate the tree if it is boring\n");
 	printf("-v                - show extra information\n");
 }
 
@@ -88,6 +91,8 @@ int main(int32_t argc, char **argv){
 		specialTree = true;
 	if(getArgumentExists(argc,argv,"--simpl"))
 		doSimplifyTree = true;
+	if(getArgumentExists(argc,argv,"--no-boring"))
+		noBoringTree = true & (!specialTree);
 	if(getArgumentExists(argc,argv,"-v"))
 		beVerbouse = true;
 	uint32_t seed = time(0);
@@ -102,6 +107,33 @@ int main(int32_t argc, char **argv){
 	imageWidth = imageScale;
 	imageHeight = imageScale;
 	getArgumentUInt32Range(argc,argv,"size=",&imageWidth,&imageHeight);
+	srandom(seed);
+	Node *tree = NULL;
+	int32_t isBoring = 0;
+	while((isBoring & 0xff) == 0){
+		if(tree != NULL){
+			seed = random();
+			freeTree(tree);
+			srandom(seed);
+			printf("tree was boring\n");
+		}
+		// create tree
+		if(treeName != NULL)
+			tree = customTreeFFile(treeName);
+		else if(specialTree)
+			tree = customTreeMy();
+		else
+			tree = createTree(stackDepth,0,stackDepth);
+		// bail out
+		if(tree == NULL){
+			printf("ERROR! no tree could be created!\n");
+			return 0;
+		}
+		isBoring = howInterestingTree(tree);
+		if(!noBoringTree)isBoring = 1;
+	}
+	if(doSimplifyTree)
+		simplifyTree(tree);
 	if(beVerbouse){
 		printf("stack: %i\n",stackDepth);
 		printf("filename: %s\n",fileName);
@@ -109,25 +141,8 @@ int main(int32_t argc, char **argv){
 		printf("seed: %u\n",seed);
 		printf("size: %ix%i\n",imageWidth, imageHeight);
 	}
-	srandom(seed);
-	Node *tree;
-	if(treeName != NULL)
-		tree = customTreeFFile(treeName);
-	else if(specialTree)
-		tree = customTreeMy();
-	else
-		tree = createTree(stackDepth,0,stackDepth);
-	if(tree == NULL){
-		printf("ERROR! no tree could be created!\n");
-		return 0;
-	}
-	if(doSimplifyTree)
-		simplifyTree(tree);
 	printTree(tree);
 	puts("");
-	if(isBoringTree(tree)){
-		printf("INFO: This tree could boring?\n");
-	}
 	Color c;
 	//
 	JitCode *jitCall;

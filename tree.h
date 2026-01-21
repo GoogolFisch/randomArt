@@ -40,8 +40,11 @@ int32_t simplifyTree(Node *tree);
 JitCode *compileTree(Node *tree);
 Node *customTreeFFile(char *name);
 
-// true => this tree is boring!
-bool isBoringTree(Node *tree);
+// 0 => very un interessting
+// 1 => interesting
+// |2 => with color
+// jj
+int32_t howInterestingTree(Node *tree);
 
 #endif
 #ifdef TREE_IMPLEMENTATION
@@ -53,7 +56,7 @@ Node *createTree(int32_t depth,int32_t flags,int32_t stackDepth){
 	if(depth <= 0)
 		out->operation = rnd % OP_TRI;
 	else if(depth >= stackDepth - 1)
-		out->operation = OP_SIN + rnd % (OP_UPPER_BOUND - OP_SIN);
+		out->operation = OP_SIN + rnd % (OP_DOT - OP_SIN);
 	else
 		out->operation = rnd % OP_UPPER_BOUND;
 	if(flags & 1 == 1 && out->operation == OP_TRI){
@@ -736,15 +739,21 @@ Node *customTreeFFile(char *name){
 	fclose(fptr);
 	return out;
 }
-bool isBoringTree(Node *tree){
-	const int arSize = 4;
+int32_t howInterestingTree(Node *tree){
+	const int arSize = 8;
 	Color testing[arSize];
-	testing[0] = collapsTree(tree, 0.5f, 0.5f);
-	testing[1] = collapsTree(tree,-0.5f, 0.5f);
-	testing[2] = collapsTree(tree, 0.5f,-0.5f);
-	testing[3] = collapsTree(tree,-0.5f,-0.5f);
+	testing[0] = collapsTree(tree, 0.6f, 0.5f);
+	testing[1] = collapsTree(tree,-0.5f, 0.6f);
+	testing[2] = collapsTree(tree, 0.5f,-0.6f);
+	testing[3] = collapsTree(tree,-0.6f,-0.5f);
+	testing[4] = collapsTree(tree, 0.3f, 0.4f);
+	testing[5] = collapsTree(tree,-0.4f, 0.3f);
+	testing[6] = collapsTree(tree, 0.4f,-0.3f);
+	testing[7] = collapsTree(tree,-0.3f,-0.4f);
+	// (0.8,0.7),(0.6,0.5),(0.3,0.4),(0.1,0.2)
 	const float epsilon = 0.05;
 	float err;
+	int32_t flagOut = 0;
 	int counted = 0;
 	Color col;
 	for(int ox = 0;ox < arSize - 1;ox++){
@@ -761,7 +770,11 @@ bool isBoringTree(Node *tree){
 		}
 	}
 	// see: I have 6 pos diff, only 3 req => interesting(false)
-	return arSize * (arSize - 1) / 4 > counted;
+	if(counted > (arSize * (arSize - 1) / 4))
+		flagOut |= 1;
+	if(testing[0].r != testing[0].g || testing[0].r != testing[0].b)
+		flagOut |= 2;
+	return flagOut;
 }
 
 #endif
