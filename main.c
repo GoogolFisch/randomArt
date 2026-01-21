@@ -19,13 +19,6 @@ typedef struct Color{
 	float b;
 	// set a to 255 / 0xFF
 } Color ;
-
-#define JIT_IMPLEMENTATION
-#include "jit.h"
-#define TREE_IMPLEMENTATION
-#include "tree.h"
-
-
 typedef union PixelStr{
 	uint32_t raw;
 	struct{
@@ -35,12 +28,19 @@ typedef union PixelStr{
 		uint8_t a;
 	};
 } PixelStr;
+
+#define JIT_IMPLEMENTATION
+#include "jit.h"
+#define TREE_IMPLEMENTATION
+#include "tree.h"
+
+
 PixelStr *pixels;
 bool doJit          = false;
 bool specialTree    = false;
 bool doSimplifyTree = false;
 bool beVerbouse     = false;
-bool noBoringTree   = false;
+int32_t acceptMap = 0;
 
 int32_t imageScale = 400;
 int32_t imageWidth, imageHeight;
@@ -64,7 +64,10 @@ void printHelp(char *fileName){
 	printf("size=..x..        - the output size of the image\n");
 	printf("--jit             - to enable jit compiler\n");
 	printf("--simpl           - remove bad paths\n");
-	printf("--no-boring       - regenerate the tree if it is boring\n");
+	printf("--with-feat       - regenerate the tree if it is boring\n");
+	printf("--with-color      - regenerate the tree if it doesn't have color\n");
+	printf("--with-depth      - regenerate the tree if it doesn't have color\n");
+	printf("--with-all        - regenerate the tree with every feature\n");
 	printf("-v                - show extra information\n");
 }
 
@@ -91,10 +94,20 @@ int main(int32_t argc, char **argv){
 		specialTree = true;
 	if(getArgumentExists(argc,argv,"--simpl"))
 		doSimplifyTree = true;
-	if(getArgumentExists(argc,argv,"--no-boring"))
-		noBoringTree = true & (!specialTree);
-	if(getArgumentExists(argc,argv,"-v"))
+	//
+	if(getArgumentExists(argc,argv,"--with-feat"))
+		acceptMap |= 1;
+	if(getArgumentExists(argc,argv,"--with-color"))
+		acceptMap |= 2;
+	if(getArgumentExists(argc,argv,"--with-depth"))
+		acceptMap |= 4;
+	if(getArgumentExists(argc,argv,"--with-all"))
+		acceptMap |= 7;
+	//
+	if(	getArgumentExists(argc,argv,"-v") || 
+		getArgumentExists(argc,argv,"-V")){
 		beVerbouse = true;
+	}
 	uint32_t seed = time(0);
 	getArgumentUInt32(argc,argv,"st=",&stackDepth);
 	getArgumentUInt32(argc,argv,"sz=",&imageScale);
@@ -110,7 +123,8 @@ int main(int32_t argc, char **argv){
 	srandom(seed);
 	Node *tree = NULL;
 	int32_t isBoring = 0;
-	while((isBoring & 0xff) == 0){
+	// gen tree
+	do{
 		if(tree != NULL){
 			seed = random();
 			freeTree(tree);
@@ -129,11 +143,13 @@ int main(int32_t argc, char **argv){
 			printf("ERROR! no tree could be created!\n");
 			return 0;
 		}
-		isBoring = howInterestingTree(tree);
-		if(!noBoringTree)isBoring = 1;
-	}
-	if(doSimplifyTree)
-		simplifyTree(tree);
+		if(doSimplifyTree)
+			simplifyTree(tree);
+		if(acceptMap)
+			isBoring = howInterestingTree(tree,stackDepth);
+		if(stackDepth < 3)isBoring |= 7;
+	} while((isBoring & acceptMap) != acceptMap);
+	// after gen tree
 	if(beVerbouse){
 		printf("stack: %i\n",stackDepth);
 		printf("filename: %s\n",fileName);
@@ -169,11 +185,11 @@ int main(int32_t argc, char **argv){
 			else
 				c = collapsTree(tree,curX,curY);
 			pixels[ox + oy * imageWidth].r =
-				(uint8_t)(((c.r + 1.0F) * 0.5F) * 255);
+				(uint8_t)(((c.r + 1.0F) * 0.5F) * 256);
 			pixels[ox + oy * imageWidth].g =
-				(uint8_t)(((c.g + 1.0F) * 0.5F) * 255);
+				(uint8_t)(((c.g + 1.0F) * 0.5F) * 256);
 			pixels[ox + oy * imageWidth].b =
-				(uint8_t)(((c.b + 1.0F) * 0.5F) * 255);
+				(uint8_t)(((c.b + 1.0F) * 0.5F) * 256);
 			pixels[ox + oy * imageWidth].a = 0xff;
 		}
 	}

@@ -43,8 +43,8 @@ Node *customTreeFFile(char *name);
 // 0 => very un interessting
 // 1 => interesting
 // |2 => with color
-// jj
-int32_t howInterestingTree(Node *tree);
+// |4 => with good tree depth
+int32_t howInterestingTree(Node *tree,int32_t intrestDepth);
 
 #endif
 #ifdef TREE_IMPLEMENTATION
@@ -260,7 +260,8 @@ int32_t simplifyTree(Node *tree){
 	} else if(tree->operation == OP_SQRT){
 		if(tree->down[0]->operation == OP_RAW){
 			fl0 = tree->down[0]->color.r;
-			fl0 = sqrtf(fl0);
+			if(fl0 > 0) fl0 = sqrtf(fl0);
+			else fl0 = -sqrtf(-fl0);
 			free(tree->down[0]);
 			tree->operation = OP_RAW;
 			tree->color.r = fl0;
@@ -289,6 +290,7 @@ int32_t simplifyTree(Node *tree){
 			tree->down[0] = refrence->down[0];
 			tree->down[1] = refrence->down[1];
 			tree->down[2] = refrence->down[2];
+			free(refrence);
 		}else if(tree->down[0]->operation == OP_RAW &&
 			tree->down[0]->color.r == 0.0F
 		){
@@ -298,6 +300,7 @@ int32_t simplifyTree(Node *tree){
 			tree->down[0] = refrence->down[0];
 			tree->down[1] = refrence->down[1];
 			tree->down[2] = refrence->down[2];
+			free(refrence);
 		}
 	}else if(tree->operation == OP_SUB){
 		if(	tree->down[0]->operation == OP_RAW &&
@@ -320,9 +323,10 @@ int32_t simplifyTree(Node *tree){
 			tree->down[0] = refrence->down[0];
 			tree->down[1] = refrence->down[1];
 			tree->down[2] = refrence->down[2];
+			free(refrence);
 		} else if(tree->down[0]->operation < OP_TRI &&
 			tree->down[1]->operation ==
-				tree->down[0]->operation
+			tree->down[0]->operation
 		){
 			free(tree->down[0]);
 			free(tree->down[1]);
@@ -363,6 +367,7 @@ int32_t simplifyTree(Node *tree){
 			tree->down[0] = refrence->down[0];
 			tree->down[1] = refrence->down[1];
 			tree->down[2] = refrence->down[2];
+			free(refrence);
 		}else if(tree->down[0]->operation == OP_RAW &&
 			tree->down[0]->color.r == 1.0F
 		){
@@ -372,6 +377,7 @@ int32_t simplifyTree(Node *tree){
 			tree->down[0] = refrence->down[0];
 			tree->down[1] = refrence->down[1];
 			tree->down[2] = refrence->down[2];
+			free(refrence);
 		}
 	}else if(tree->operation == OP_DIV){
 		if((tree->down[1]->operation == OP_RAW &&
@@ -405,6 +411,7 @@ int32_t simplifyTree(Node *tree){
 			tree->down[0] = refrence->down[0];
 			tree->down[1] = refrence->down[1];
 			tree->down[2] = refrence->down[2];
+			free(refrence);
 		} else if(tree->down[0]->operation < OP_TRI &&
 			tree->down[1]->operation ==
 				tree->down[0]->operation
@@ -739,29 +746,70 @@ Node *customTreeFFile(char *name){
 	fclose(fptr);
 	return out;
 }
-int32_t howInterestingTree(Node *tree){
-	const int arSize = 8;
-	Color testing[arSize];
-	testing[0] = collapsTree(tree, 0.6f, 0.5f);
-	testing[1] = collapsTree(tree,-0.5f, 0.6f);
-	testing[2] = collapsTree(tree, 0.5f,-0.6f);
-	testing[3] = collapsTree(tree,-0.6f,-0.5f);
-	testing[4] = collapsTree(tree, 0.3f, 0.4f);
-	testing[5] = collapsTree(tree,-0.4f, 0.3f);
-	testing[6] = collapsTree(tree, 0.4f,-0.3f);
-	testing[7] = collapsTree(tree,-0.3f,-0.4f);
-	// (0.8,0.7),(0.6,0.5),(0.3,0.4),(0.1,0.2)
-	const float epsilon = 0.05;
-	float err;
+int32_t testDepthTree(Node *tree){
+	int32_t ttd;
+	if(tree->operation == OP_TRI){
+		ttd  = testDepthTree(tree->down[0]);
+		ttd += testDepthTree(tree->down[1]);
+		ttd += testDepthTree(tree->down[2]);
+		ttd /= 3;
+	} else if(tree->operation >= OP_ADD){
+		ttd  = testDepthTree(tree->down[0]);
+		ttd += testDepthTree(tree->down[1]);
+		ttd /= 2;
+	} else if(tree->operation >= OP_SIN){
+		ttd  = testDepthTree(tree->down[0]);
+	} else if(tree->operation >= OP_RAW){
+		ttd = 0;
+	}
+	return ttd + 1;
+}
+int32_t howInterestingTree(Node *tree,int32_t intrestDepth){
 	int32_t flagOut = 0;
+	// test tree depth
+	if(intrestDepth / 2 >= testDepthTree(tree))
+		flagOut |= 4;
+	if(intrestDepth < 6)flagOut |= 4;
+	if(intrestDepth < 3)flagOut |= 7;
+	const int arSize = 8;
+	//Color testing[arSize];
+	// test pixel colors
+	Color c1;
+	PixelStr tstPix[arSize];
+	float deltas[4] = {0.6f,0.5f,0.4f,0.3f};
+	int32_t pixIdx = 0;
+	for(int32_t dind = 0;dind < arSize / 2;dind += 2){
+		c1 = collapsTree(tree,deltas[dind],deltas[dind + 1]);
+		tstPix[pixIdx].r = (uint8_t)(((c1.r + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].g = (uint8_t)(((c1.g + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].b = (uint8_t)(((c1.b + 1.0F) * 0.5F) * 256);
+		pixIdx++;
+		c1 = collapsTree(tree,-deltas[dind + 1],deltas[dind]);
+		tstPix[pixIdx].r = (uint8_t)(((c1.r + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].g = (uint8_t)(((c1.g + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].b = (uint8_t)(((c1.b + 1.0F) * 0.5F) * 256);
+		pixIdx++;
+		c1 = collapsTree(tree,-deltas[dind],-deltas[dind + 1]);
+		tstPix[pixIdx].r = (uint8_t)(((c1.r + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].g = (uint8_t)(((c1.g + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].b = (uint8_t)(((c1.b + 1.0F) * 0.5F) * 256);
+		pixIdx++;
+		c1 = collapsTree(tree,deltas[dind + 1],-deltas[dind]);
+		tstPix[pixIdx].r = (uint8_t)(((c1.r + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].g = (uint8_t)(((c1.g + 1.0F) * 0.5F) * 256);
+		tstPix[pixIdx].b = (uint8_t)(((c1.b + 1.0F) * 0.5F) * 256);
+		pixIdx++;
+	}
+	const int32_t epsilon = 10;
+	float err;
 	int counted = 0;
-	Color col;
+	int32_t cr,cg,cb;
 	for(int ox = 0;ox < arSize - 1;ox++){
 		for(int oy = ox + 1;oy < arSize;oy++){
-			col.r = testing[ox].r - testing[oy].r;
-			col.g = testing[ox].g - testing[oy].g;
-			col.b = testing[ox].b - testing[oy].b;
-			err = fabsf(col.r) + fabsf(col.g) + fabsf(col.b);
+			cr = (int32_t)(tstPix[ox].r - tstPix[oy].r);
+			cg = (int32_t)(tstPix[ox].g - tstPix[oy].g);
+			cb = (int32_t)(tstPix[ox].b - tstPix[oy].b);
+			err =  cr * cr + cg * cg + cb * cb;
 			if(err < epsilon)
 				// boring!
 				continue;
@@ -772,7 +820,8 @@ int32_t howInterestingTree(Node *tree){
 	// see: I have 6 pos diff, only 3 req => interesting(false)
 	if(counted > (arSize * (arSize - 1) / 4))
 		flagOut |= 1;
-	if(testing[0].r != testing[0].g || testing[0].r != testing[0].b)
+	// test if colored
+	if(tstPix[0].r != tstPix[0].g || tstPix[0].r != tstPix[0].b)
 		flagOut |= 2;
 	return flagOut;
 }
