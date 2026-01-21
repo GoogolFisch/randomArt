@@ -770,7 +770,6 @@ int32_t howInterestingTree(Node *tree,int32_t intrestDepth){
 	if(intrestDepth / 2 >= testDepthTree(tree))
 		flagOut |= 4;
 	if(intrestDepth < 6)flagOut |= 4;
-	if(intrestDepth < 3)flagOut |= 7;
 	const int arSize = 8;
 	//Color testing[arSize];
 	// test pixel colors
