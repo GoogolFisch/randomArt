@@ -7,23 +7,26 @@ random art made with C
 ![other-stuff](/img/universe_wave.png)
 ![gray-with-colors](/img/gray_with_colors.png)
 
+## Info
+```
+file=filename.png -(fl) to where the generated file should be stored
+stack=10          -(st) how deep the nested expressions should get
+scale=400         -(sz) how big the scale should be
+seed=???          - set a seed to controll the generator
+tree=?            - if an tree file should be used
+size=..x..        - the output size of the image
+--jit             - to enable jit compiler
+--simpl           - remove bad paths
+--with-feat       - regenerate the tree if it is boring
+--with-color      - regenerate the tree if it doesn't have color
+--with-depth      - regenerate the tree if it doesn't have color
+--with-all        - regenerate the tree with every feature
+-v                - show extra information
+```
 
-## TODO
-Currently the diffrence between interpreting and compiling is existant!
-I'll have to change that in the future!
+## May be doing
+There might come more diffrences between interpreting and compiling.
 
 Features 4 the jit to come:
-- parity between jit and interpreter
-- cross product
 - and maybe adding more operations
-
-Other Features to come:
-- you being albe to input custom instruction trees
-  - like copy paste of the output tree
-- range feature for possible raw-float values
-  - idea: float=-2..2 or -2:2
-- ranges for the display, not only an square
-  - idea: output=1600x900 or 1600:900
-- better random tree generator, so less boring happens
-  (When Cross Product of Scalar and Scalar happens = 0)
 
