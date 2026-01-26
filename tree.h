@@ -799,7 +799,7 @@ int32_t howInterestingTree(Node *tree,int32_t intrestDepth){
 		tstPix[pixIdx].b = (uint8_t)(((c1.b + 1.0F) * 0.5F) * 256);
 		pixIdx++;
 	}
-	const int32_t epsilon = 10;
+	const int32_t epsilon = 20;
 	float err;
 	int counted = 0;
 	int32_t cr,cg,cb;

@@ -66,7 +66,7 @@ void printHelp(char *fileName){
 	printf("--simpl           - remove bad paths\n");
 	printf("--with-feat       - regenerate the tree if it is boring\n");
 	printf("--with-color      - regenerate the tree if it doesn't have color\n");
-	printf("--with-depth      - regenerate the tree if it doesn't have color\n");
+	printf("--with-depth      - regenerate the tree if it doesn't have the depth\n");
 	printf("--with-all        - regenerate the tree with every feature\n");
 	printf("-v                - show extra information\n");
 }
@@ -129,7 +129,9 @@ int main(int32_t argc, char **argv){
 			seed = random();
 			freeTree(tree);
 			srandom(seed);
-			printf("tree was boring\n");
+			if(beVerbouse){
+				printf("tree was boring\n");
+			}
 		}
 		// create tree
 		if(treeName != NULL)
