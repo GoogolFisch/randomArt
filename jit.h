@@ -42,7 +42,9 @@ void code_append_tst_div0(JitBuffer *ins);
 
 //
 
-void code_append_operation_tri_sto(JitBuffer *ins);
+void code_append_operation_tri_sto0(JitBuffer *ins);
+void code_append_operation_tri_sto1(JitBuffer *ins);
+void code_append_operation_tri_load(JitBuffer *ins);
 
 void code_append_operation_sqrt(JitBuffer *ins);
 void code_append_operation_sin(JitBuffer *ins);
@@ -242,10 +244,19 @@ void code_append_tst_div0(JitBuffer *ins){
 	code_append_stack_up(ins);
 }
 
-void code_append_operation_tri_sto(JitBuffer *ins){
+void code_append_operation_tri_sto0(JitBuffer *ins){
 	jit_append_cStr(ins,"\x0f\x29\x04\x24"); // movaps [rsp],xmm0
 	//jit_append_cStr(ins,"\xf3\x0f\x11\x04\x24");
 	//movss DWORD [rsp+0x4],xmm0
+}
+void code_append_operation_tri_sto1(JitBuffer *ins){
+	jit_append_cStr(ins,"\xf3\x0f\x11\x44\x24\x04");
+	//movss DWORD [rsp+0x8],xmm0
+}
+void code_append_operation_tri_load(JitBuffer *ins){
+	jit_append_cStr(ins,"\xf3\x0f\x11\x44\x24\x08");
+	//movaps xmm0,[rsp]
+	jit_append_cStr(ins,"\x0f\x28\x04\x24");
 }
 
 void code_append_operation_sqrt(JitBuffer *ins){
