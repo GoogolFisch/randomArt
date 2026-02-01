@@ -175,6 +175,19 @@ void code_append_stack_end(JitBuffer *ins){
 }
 // TODO make more complicated
 void code_append_stack_down(JitBuffer *ins){
+	if(ins->filled - ins->pos == 4){
+		if(ins->memory[ins->filled - 4] != '\x48')
+			goto stack_down_new_down;
+		if(ins->memory[ins->filled - 3] != '\x83')
+			goto stack_down_new_down;
+		if(ins->memory[ins->filled - 2] != '\xec')
+			goto stack_down_new_down;
+		if((uint32_t)ins->memory[ins->filled - 1] > (uint32_t)'\xdc')
+			goto stack_down_new_down;
+		ins->memory[ins->filled - 1] += '\x10';
+		return;
+	}
+stack_down_new_down:
 	jit_buffer_mark(ins,128 | (ins->flags & ~256));
 	jit_append_cStr(ins,"\x48\x83\xec\x10"); // sub rsp,0x10
 	// \x48\x81\xec\x??\x??\x??\x?? // sub rsp,0x????????
