@@ -29,8 +29,10 @@ typedef union PixelStr{
 	};
 } PixelStr;
 
+#ifndef NO_JIT_
 #define JIT_IMPLEMENTATION
 #include "jit.h"
+#endif
 #define TREE_IMPLEMENTATION
 #include "tree.h"
 
@@ -163,6 +165,7 @@ int main(int32_t argc, char **argv){
 	puts("");
 	Color c;
 	//
+#ifndef NO_JIT
 	JitCode *jitCall;
 	if(doJit){
 		jitCall = compileTree(tree);
@@ -170,6 +173,7 @@ int main(int32_t argc, char **argv){
 			assert(0 && "error!\n");
 		}
 	}
+#endif
 	//
 	float curX;
 	float curY;
@@ -181,10 +185,12 @@ int main(int32_t argc, char **argv){
 		for(int32_t oy = 0;oy < imageHeight;oy++){
 			curX = (((float)ox - imageWidth / 2) / imageScale) * 2.0F;
 			curY = (((float)oy - imageHeight / 2) / imageScale) * 2.0F;
+#ifndef NO_JIT
 			if(doJit){
 				c = (jitCall->run)(tree,curX,curY);
 			}
 			else
+#endif
 				c = collapsTree(tree,curX,curY);
 			pixels[ox + oy * imageWidth].r =
 				(uint8_t)(((c.r + 1.0F) * 0.5F) * 256);

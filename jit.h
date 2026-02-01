@@ -181,10 +181,19 @@ void code_append_stack_down(JitBuffer *ins){
 		if(ins->memory[ins->filled - 3] != '\x83')
 			goto stack_down_new_down;
 		if(ins->memory[ins->filled - 2] != '\xec')
-			goto stack_down_new_down;
-		if((uint32_t)ins->memory[ins->filled - 1] > (uint32_t)'\xdc')
+			goto stack_down_tst_rem;
+		if((uint32_t)ins->memory[ins->filled - 1] >= (uint32_t)'\x70')
 			goto stack_down_new_down;
 		ins->memory[ins->filled - 1] += '\x10';
+		return;
+stack_down_tst_rem:
+		if(ins->memory[ins->filled-2] != '\xc4')
+			goto stack_down_new_down;
+		ins->memory[ins->filled - 1] -= '\x10';
+		if((uint32_t)ins->memory[ins->filled - 1] == (uint32_t)'\x00'){
+			ins->filled -= 4;
+			ins->pos = -999;
+		}
 		return;
 	}
 stack_down_new_down:
