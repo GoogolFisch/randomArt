@@ -203,6 +203,7 @@ int main(int32_t argc, char **argv){
 	}
 	stbi_write_png(fileName,imageWidth,imageHeight,4 /*RGBA*/,pixels,imageWidth * sizeof(uint32_t));
 	//
+#ifndef NO_JIT
 	if(doJit){
 		if(jit_free_code(jitCall)){
 			assert(0 && "freeing fail!\n");
@@ -212,4 +213,5 @@ int main(int32_t argc, char **argv){
 		free(jitCall);
 		//free(jitBuf);
 	}
+#endif
 }
