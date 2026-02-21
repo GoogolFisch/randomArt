@@ -213,21 +213,6 @@ void code_append_fetch_y(JitBuffer *ins){
 	jit_append_cStr(ins,"\x0f\x28\x45\xe0"); // movaps xmm0,[rsp - 32]
 }
 void code_append_fetch_raw(JitBuffer *ins,float raw){
-	/*
-	jit_append_cStr(ins,"\xc7\x04\x24"); // mov DWORD [rsp     ], ??
-	jit_append_lenStr(ins,(char*)&raw,sizeof(float));
-	jit_append_cStr(ins,"\xc7\x44\x24\x04"); // mov DWORD [rsp +  4], ??
-	jit_append_lenStr(ins,(char*)&raw,sizeof(float));
-	jit_append_cStr(ins,"\xc7\x44\x24\x08"); // mov DWORD [rsp +  8], ??
-	jit_append_lenStr(ins,(char*)&raw,sizeof(float));
-	jit_append_cStr(ins,"\xc7\x44\x24\x0c"); // mov DWORD [rsp + 12], ??
-	jit_append_lenStr(ins,(char*)&raw,sizeof(float));
-	jit_append_cStr(ins,"\x0f\x28\x04\x24"); // movaps xmm0,[rsp]
-	*/
-	// \xc7\x04\x24\x??\x??\x??\x??
-	// \xc7\x44\x24\x04\x??\x??\x??\x??
-	// \xc7\x44\x24\x08\x??\x??\x??\x??
-	// \xc7\x44\x24\x0c\x??\x??\x??\x??
 	jit_append_cStr(ins,"\xb8"); // mov eax, ???
 	jit_append_lenStr(ins,(char*)&raw,sizeof(float));
 	jit_append_cStr(ins,"\x66\x0f\x6e\xc0"); // movd xmm0,eax
