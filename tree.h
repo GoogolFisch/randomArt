@@ -505,6 +505,7 @@ int32_t simplifyTree(Node *tree){
 	}
 	return flags;
 }
+#ifndef NO_JIT
 void compileTreeInsert(JitBuffer *buf,Node *tree){
 	code_append_stack_down(buf);
 	if(tree->operation == OP_RAW){
@@ -586,6 +587,7 @@ JitCode *compileTree(Node *tree){
 	free(jitBuf.memory);
 	return jitCall;
 }
+#endif
 
 Node *customTreeWithFile(FILE *fptr){
 	Node *outp = malloc(sizeof(Node));
